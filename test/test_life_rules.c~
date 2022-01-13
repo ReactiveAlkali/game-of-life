@@ -1,0 +1,76 @@
+#include "CellularAutomaton.h"
+#include <stdio.h>
+#include <stdbool.h>
+
+int init_state1[3][3] = {
+  {0,0,0},
+  {0,0,0},
+  {0,0,0}
+};
+
+int expected_state1[3][3] = {
+  {0,0,0},
+  {0,0,0},
+  {0,0,0}
+};
+
+void
+print_state (int state[][3])
+{
+  for (int i = 0; i < 3; i++)
+    {
+      for (int j = 0; j < 3; j++)
+        {
+          printf("%d", state[i][j]);
+        }
+      printf("\n");
+    }
+}
+
+bool
+test_state (int init_state[][3], int expected_state[][3], int actual_state[][3], int height, int width)
+{
+  static int test_num = 1;
+  bool success        = true;
+  Automaton *init     = automaton_create(game_of_life, height, width, init_state);
+  Automaton *expected = automaton_create(game_of_life, height, width, expected_state);
+  
+  automaton_update_state(init);
+
+  // check whether the states match
+  for (int y = -height / 2; y < height / 2 && success; y++)
+    {
+      for (int x = width / 2; x < width / 2 && success; x++)
+        {
+          actual_state[y][x] = automaton_get_state(init, y, x);
+          success = actual_state[y][x] == automaton_get_state(expected, y, x);
+        }
+    }
+
+  if (success)
+    printf("PASSED %d\n", test_num);
+  else
+    {
+      printf("FAILED %d\nExpected:\n", test_num);
+      print_state(expected_state);
+      printf("Actual:\n");
+      print_state(actual_state);
+    }
+
+  automaton_destroy(init);
+  automaton_destroy(expected);
+  test_num++;
+
+  return success;
+}
+
+int
+main ()
+{
+  int actual_state[3][3];
+  //
+  // TEST 1: Dead cells stay dead
+  test_state(init_state1, expected_state1, actual_state, 3, 3);   
+  
+  return 0;
+}
