@@ -12,6 +12,25 @@ struct AUTOMATON
   Point_Set *board_state;
 };
 
+/*
+ * NEIGHBOURHOOD CHECKS
+ *
+ * Counts how many cells in the given state are located in the neighbourhood
+ * surrounding the given location.
+ */
+
+static int
+check_von_neumann_neighbourhood (Automaton *automaton, int y, int x, int state)
+{
+  assert(automaton);
+  assert(automaton->board_state);
+
+  return (automaton_get_state(automaton, y - 1, x) == state)
+    + (automaton_get_state(automaton, y + 1, x) == state)
+    + (automaton_get_state(automaton, y, x - 1) == state)
+    + (automaton_get_state(automaton, y, x + 1) == state);
+}
+
 // Counts how many cells of the given state are in the Moore Neighbourhood
 // of the given location.
 static int
@@ -29,7 +48,6 @@ check_moore_neighbourhood (Automaton *automaton, int y, int x, int state)
             count++;
         }
     }
-  //printf("%d y=%d x=%d\n", count, y, x);
 
   return count;
 }
@@ -63,14 +81,103 @@ random_state (int height, int width, int num_states)
  * different cellular automaton implemented here.
  */
 
-static Point_Set *
-next_board_state_seeds (Automaton *automaton)
+static int
+next_state_seeds (Automaton *automaton, int y, int x)
 {
-  assert(automaton);
-  assert(automaton->board_state);
-  assert(automaton->type == seeds);
+  int next_state      = 0;
+  int current_state   = automaton_get_state(automaton, y, x);
+  int live_neighbours = check_moore_neighbourhood(automaton, y, x, 1);
+  
+  if (!current_state && live_neighbours == 2)
+    next_state = 1;
 
-  int live_state        = 1;
+  return next_state;
+}
+
+static int
+next_state_life (Automaton *automaton, int y, int x)
+{
+  int next_state      = 0;
+  int current_state   = automaton_get_state(automaton, y, x);
+  int live_neighbours = check_moore_neighbourhood(automaton, y, x, 1);
+
+  if ((current_state && (live_neighbours == 2 || live_neighbours == 3))
+      || (!current_state && live_neighbours == 3))
+    next_state = 1;
+
+  return next_state;
+}
+
+static int
+next_state_highlife (Automaton *automaton, int y, int x)
+{
+  int next_state      = 0;
+  int current_state   = automaton_get_state(automaton, y, x);
+  int live_neighbours = check_moore_neighbourhood(automaton, y, x, 1);
+
+  // Born with 3 or 6 neighbours; survives with 2 or 3 neighbours
+  if ((!current_state && (live_neighbours == 3 || live_neighbours == 6))
+      || (current_state && (live_neighbours == 2 || live_neighbours == 3)))
+    next_state = 1;
+
+  return next_state;
+}
+
+static int
+next_state_greenberg_hastings (Automaton *automaton, int y, int x)
+{
+  int next_state      = 0;
+  int current_state   = automaton_get_state(automaton, y, x);
+  int live_neighbours = check_von_neumann_neighbourhood(automaton, y, x, 1);
+
+  if (current_state == 1)
+    next_state = 2;
+  else if (current_state == 2)
+    next_state = 0;
+  else if (live_neighbours > 0)
+    next_state = 1;
+
+  return next_state;
+}
+
+static int
+next_state_brians_brain (Automaton *automaton, int y, int x)
+{
+  int next_state    = 0;
+  int current_state = automaton_get_state(automaton, y, x);
+  int on_neighbours = check_moore_neighbourhood(automaton, y, x, 1);
+
+  if (current_state == 1)
+    next_state = 2;
+  else if (current_state == 2)
+    next_state = 0;
+  else if (on_neighbours == 2)
+    next_state = 1;
+
+  return next_state;
+}
+
+static int
+next_state_day_and_night (Automaton *automaton, int y, int x)
+{
+  int next_state      = 0;
+  int current_state   = automaton_get_state(automaton, y, x);
+  int live_neighbours = check_moore_neighbourhood(automaton, y, x, 1);
+
+  /* B3678/S34678 */
+  if ((current_state && (live_neighbours == 3 || live_neighbours == 4
+                         || live_neighbours == 6 || live_neighbours == 7
+                         || live_neighbours == 8))
+      || (!current_state && (live_neighbours == 3 || live_neighbours == 6
+                             || live_neighbours == 7 || live_neighbours == 8)))
+    next_state = 1;
+
+  return next_state;
+}
+
+static Point_Set *
+next_board_state (Automaton *automaton)
+{
   Point_Set *next_state = point_set_create(sizeof(int), free);
   if (!next_state)
     goto done;
@@ -81,38 +188,34 @@ next_board_state_seeds (Automaton *automaton)
       for (int x = -automaton->width / 2;
            x < automaton->width - automaton->width / 2; x++)
         {
-          int current_state   = automaton_get_state(automaton, y, x);
-          int live_neighbours = check_moore_neighbourhood(automaton, y, x,
-                                                          live_state);
-          // Cell is born if it's dead and has two neighbours, all others die
-          if (!current_state && live_neighbours == 2)
-            point_set_insert(next_state, y, x, &live_state);
-        }
-    }
+          int cell_state = 0;
 
- done:
-  return next_state;
-}
-
-static Point_Set *
-next_board_state_life (Automaton *automaton)
-{
-  int live_state        = 1;
-  Point_Set *next_state = point_set_create(sizeof(int), free);
-  if (!next_state)
-    goto done;
-
-  // state coordinates are centred on (0,0)
-  for (int y = -automaton->height / 2; y <= automaton->height / 2; y++)
-    {
-      for (int x = -automaton->width / 2; x <= automaton->width / 2; x++)
-        {
-          int state           = automaton_get_state(automaton, y, x);
-          int live_neighbours = check_moore_neighbourhood(automaton, y, x, 1);
+          // Get the next state of the cell according to the automaton's type
+          switch (automaton->type)
+            {
+            case seeds:
+              cell_state = next_state_seeds(automaton, y, x);
+              break;
+            case game_of_life:
+              cell_state = next_state_life(automaton, y, x);
+              break;
+            case highlife:
+              cell_state = next_state_highlife(automaton, y, x);
+              break;
+            case greenberg_hastings:
+              cell_state = next_state_greenberg_hastings(automaton, y, x);
+              break;
+            case brians_brain:
+              cell_state = next_state_brians_brain(automaton, y, x);
+              break;
+            case day_and_night:
+              cell_state = next_state_day_and_night(automaton, y, x);
+              break;
+            }
           
-          if ((state && (live_neighbours == 2 || live_neighbours == 3))
-              || (!state && live_neighbours == 3))
-            point_set_insert(next_state, y, x, &live_state);
+          // Any point not in the point set is assumed to be zero
+          if (cell_state)
+            point_set_insert(next_state, y, x, &cell_state);
         }
     }
 
@@ -120,17 +223,6 @@ next_board_state_life (Automaton *automaton)
   return next_state;
 }
 
-static Point_Set *
-next_board_state_wa_tor (Automaton *automaton)
-{
-  assert(automaton);
-  assert(automaton->board_state);
-  assert(automaton->type == wa_tor);
-
-  int state_fish        = 1;
-  int state_shark       = 2;
-  Point_Set *next_state = point_set_create(sizeof(int), free);
-}
 
 // Creates an automaton struct ptr
 static Automaton *
@@ -187,7 +279,13 @@ automaton_create (Automaton_Type type, int height, int width, int **init_state)
         {
         case game_of_life:
         case seeds:
+        case highlife:
+        case day_and_night:
           new_automaton->board_state = random_state(height, width, 2);
+          break;
+        case brians_brain:
+        case greenberg_hastings:
+          new_automaton->board_state = random_state(height, width, 3);
           break;
         default:
           new_automaton->board_state = NULL;
@@ -213,21 +311,13 @@ automaton_destroy (Automaton *automaton)
 bool
 automaton_update_state (Automaton *automaton)
 {
+  assert(automaton);
+  assert(automaton->board_state);
+  
   bool success = true;
   Point_Set *next_state;
 
-  switch (automaton->type)
-    {
-    case game_of_life:
-      next_state = next_board_state_life(automaton);
-      break;
-    case seeds:
-      next_state = next_board_state_seeds(automaton);
-      break;
-    default:
-      next_state = NULL;
-    }
-  // Update failed
+  next_state = next_board_state(automaton);
   if (!next_state)
     {
       success = false;

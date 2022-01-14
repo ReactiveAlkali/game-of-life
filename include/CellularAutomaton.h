@@ -5,8 +5,8 @@
  * @brief Interface for a cellular automaton
  * 
  * This header defines the interface for interacting with a simple 2D cellular
- * automaton.  At most each of the implemented automaton will only have 3 
- * possible states with 0 always representing a dead/empty cell.
+ * automaton.  All the defined cellular automaton are similar in function to 
+ * Conway's Game of Life.
  */
 
 #ifndef CELLULAR_AUTOMATON_H
@@ -18,11 +18,10 @@ typedef enum AUTOMATON_TYPE
   {
     game_of_life,
     seeds,
-    wa_tor,
     greenberg_hastings,
     highlife,
-    life_without_death,
-    day_and_night
+    day_and_night,
+    brians_brain
   } Automaton_Type;
 
 typedef struct AUTOMATON Automaton;

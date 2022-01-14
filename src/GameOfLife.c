@@ -59,7 +59,7 @@ main ()
   printw("F1 to exit");
   refresh();
 
-  Automaton *life          = automaton_create(seeds, (LINES - 1) * 2, COLS * 2, NULL);
+  Automaton *life          = automaton_create(game_of_life, (LINES - 1) * 2, COLS * 2, NULL);
   WINDOW *automaton_window = newwin(LINES - 1, COLS, 1, 0);
 
   int key;
