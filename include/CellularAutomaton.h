@@ -29,16 +29,15 @@ typedef struct AUTOMATON Automaton;
 /**
  * @brief Creates a new cellular automaton
  *
- * Creates a cellular automaton of the given type with a given board size.  Can
- * also be provided with an initial state of the given height and width.
+ * Creates a cellular automaton of the given type with a given board size.  The
+ * automaton is always initialized to a dead state.
  * @param type The type of automaton that is being created.
  * @param height Height of the automaton's grid.
  * @param width Width of the automaton's grid.
- * @param init_state The initial state of the board, NULL for random state
  * @return Returns a pointer to the newly created automaton.
  */
 Automaton *
-automaton_create (Automaton_Type type, int height, int width, int **init_state);
+automaton_create (Automaton_Type type, int height, int width);
 
 /**
  * @brief Destroys the given automaton.
@@ -72,6 +71,12 @@ automaton_update_state (Automaton *automaton);
 int
 automaton_get_state (Automaton *automaton, int y, int x);
 
+int
+automaton_get_width (Automaton *automaton);
+
+int
+automaton_get_height (Automaton *automaton);
+
 /**
  * @brief Sets the boundaries of the given automaton.
  *
@@ -83,5 +88,29 @@ automaton_get_state (Automaton *automaton, int y, int x);
  */
 void
 automaton_set_border (Automaton *automaton, int height, int width);
+
+/**
+ * @brief Sets the automaton to a random state.
+ *
+ * Randomizes the state of the given automaton's board.
+ * @param automaton The automaton to randomize the state of.
+ * @return Returns whether the state was successfully randomized.
+ */
+bool
+automaton_random_state (Automaton *automaton);
+
+/**
+ * @brief Sets the board state of the given automaton.
+ *
+ * Sets the given automaton to the given state.  The automaton's border will 
+ * be resized if the given state is larger that the current board size.
+ * @param automaton The automaton to set the board state of.
+ * @param height The height of the given state.
+ * @param width The width of the given state.
+ * @param state A 2D array containing the board state.
+ * @return Returns whether the state was successfully set.
+ */
+bool
+automaton_set_board_state (Automaton *automaton, int height, int width, int **state);
 
 #endif

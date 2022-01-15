@@ -223,8 +223,10 @@ next_board_state (Automaton *automaton)
   return next_state;
 }
 
+/*
+ * CONSTRUCTION AND DESTRUCTION
+ */
 
-// Creates an automaton struct ptr
 static Automaton *
 automaton_new_struct (Automaton_Type type, int height, int width)
 {
@@ -242,7 +244,7 @@ automaton_new_struct (Automaton_Type type, int height, int width)
 }
 
 Automaton *
-automaton_create (Automaton_Type type, int height, int width, int **init_state)
+automaton_create (Automaton_Type type, int height, int width)
 {
   Automaton *new_automaton = automaton_new_struct(type, height, width);
   if (!new_automaton)
@@ -253,48 +255,6 @@ automaton_create (Automaton_Type type, int height, int width, int **init_state)
     {
       free(new_automaton);
       new_automaton = NULL;
-      goto done;
-    }
-
-  // use the given initial state or random if NULL
-  if (init_state)
-    {
-      for (int i = 0; i < height; i++)
-        {
-          for (int j = 0; j < width; j++)
-            {
-              int state = init_state[i][j];
-              if (state)
-                {
-                  point_set_insert(new_automaton->board_state, i - height / 2,
-                                   j - width / 2, &state);
-                }
-            }
-        }
-    }
-  else
-    {
-      // randomize the automaton's state
-      switch (type)
-        {
-        case game_of_life:
-        case seeds:
-        case highlife:
-        case day_and_night:
-          new_automaton->board_state = random_state(height, width, 2);
-          break;
-        case brians_brain:
-        case greenberg_hastings:
-          new_automaton->board_state = random_state(height, width, 3);
-          break;
-        default:
-          new_automaton->board_state = NULL;
-        }
-      if (!new_automaton->board_state)
-        {
-          free(new_automaton);
-          new_automaton = NULL;
-        }
     }
 
  done:
@@ -332,6 +292,22 @@ automaton_update_state (Automaton *automaton)
   return success;
 }
 
+/*
+ * GETTERS
+ */
+
+int
+automaton_get_width (Automaton *automaton)
+{
+  return automaton->width;
+}
+
+int
+automaton_get_height (Automaton *automaton)
+{
+  return automaton->height;
+}
+
 int
 automaton_get_state (Automaton *automaton, int y, int x)
 {
@@ -342,6 +318,42 @@ automaton_get_state (Automaton *automaton, int y, int x)
     state = *state_ptr;
 
   return state;
+}
+
+/*
+ * SETTERS
+ */
+
+bool
+automaton_random_state (Automaton *automaton)
+{
+  assert(automaton);
+  assert(automaton->board_state);
+
+  bool success = false;
+  Point_Set *new_state;
+
+  switch (automaton->type)
+    {
+    case game_of_life:
+    case seeds:
+    case highlife:
+    case day_and_night:
+      new_state = random_state(automaton->height, automaton->width, 2);
+      break;
+    case greenberg_hastings:
+    case brians_brain:
+      new_state = random_state(automaton->height, automaton->width, 1);
+    }
+  if (!new_state)
+    goto done;
+
+  free(automaton->board_state);
+  automaton->board_state = new_state;
+  success = true;
+
+ done:
+  return success;
 }
 
 void
