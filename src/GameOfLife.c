@@ -41,7 +41,7 @@ render_automaton (WINDOW *win, Automaton *automaton)
                                           col - width / 2);
           if (state)
             {
-              attrset((state == 1) ? A_NORMAL : A_DIM);
+              wattrset(win, (state == 1) ? A_NORMAL : A_DIM);
               mvwaddch(win, row, col, '#');
             }
         }
@@ -90,28 +90,28 @@ main ()
   cbreak();
   curs_set(0);
   keypad(stdscr, true);
-  timeout(0);
+  timeout(-1);
   
   printw("F1 to exit   F2 to toggle menu");
   refresh();
 
   Automaton *life = automaton_create(game_of_life, (LINES - 1) * 2, COLS * 2);
-  automaton_random_state(life);
   
   life_win = newwin(LINES - 1, COLS, 1, 0);
   menu_win = newwin(MENU_HEIGHT, MENU_WIDTH, LINES / 2 - MENU_HEIGHT / 2,
                     COLS / 2 - MENU_WIDTH / 2);
 
   int key;
-  while ((key = getch()) != KEY_F(1))
+  do
     {
       switch (key)
         {
-        case KEY_F(2):
+        case KEY_F(2): /* Toggle the menu on/off */
           menu_open   = !menu_open;
           num_choices = NUM_AUTOMATONS;
           state_menu  = false;
           choice      = -1;
+          timeout(-1);
           break;
         case KEY_UP:
           if (highlight == 0)
@@ -136,23 +136,34 @@ main ()
       if (menu_open)
         {
           print_menu(menu_win, highlight, num_choices, state_menu);
-          timeout(-1);
-          if (choice > 0)
+          if (choice >= 0)
             {
+              // The open menu was the one asking to choose an automaton
               if (state_menu)
                 {
                   automaton_destroy(life);
                   life = automaton_create(choice, LINES * 2, COLS * 2);
                 }
+              else
+                {
+                  switch (choice)
+                    {
+                    case 0:
+                      automaton_random_state(life);
+                    }
+                  menu_open = false;
+                  timeout(1000);
+                }
             }
         }
-      else
+      // The menu may have just been closed
+      if (!menu_open)
         {
           render_automaton(life_win, life);
           automaton_update_state(life);
-          timeout(1000);
         }
     }
+  while ((key = getch()) != KEY_F(1));
   
   automaton_destroy(life);
   endwin();

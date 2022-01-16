@@ -343,7 +343,7 @@ automaton_random_state (Automaton *automaton)
       break;
     case greenberg_hastings:
     case brians_brain:
-      new_state = random_state(automaton->height, automaton->width, 1);
+      new_state = random_state(automaton->height, automaton->width, 3);
     }
   if (!new_state)
     goto done;
