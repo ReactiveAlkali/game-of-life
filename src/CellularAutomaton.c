@@ -362,3 +362,9 @@ automaton_set_border (Automaton *automaton, int height, int width)
   automaton->height = height;
   automaton->width = width;
 }
+
+void
+automaton_set_type (Automaton *automaton, Automaton_Type type)
+{
+  automaton->type = type;
+}

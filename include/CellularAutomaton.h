@@ -113,4 +113,14 @@ automaton_random_state (Automaton *automaton);
 bool
 automaton_set_board_state (Automaton *automaton, int height, int width, int **state);
 
+/**
+ * @brief Sets the automaton's type
+ *
+ * Sets the given automaton to whatever the given type is
+ * @param automaton The automaton to set the type of.
+ * @param type The type to set the automaton to.
+ */
+void
+automaton_set_type (Automaton *automaton, Automaton_Type type);
+
 #endif

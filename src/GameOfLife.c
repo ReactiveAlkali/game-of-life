@@ -7,11 +7,9 @@
 
 #define MENU_WIDTH 25
 #define MENU_HEIGHT 10
-#define NUM_AUTOMATONS 6
-#define STATE_CHOICES 3
 
 /* Indices of this array should match the automaton type enum */
-char *automaton_choices[] = {
+static char *automaton_choices[] = {
   "Conway's Game of Life",
   "Seeds",
   "Greenberg-Hastings",
@@ -19,12 +17,49 @@ char *automaton_choices[] = {
   "Day and Night",
   "Brian's Brain"
 };
+static const int num_automaton_choices = 6;
 
-char *state_choices[] = {
+static char *state_choices[] = {
   "Random State",
   "Load From File",
   "Custom State"
 };
+static const int num_state_choices = 3;
+
+/* A structure for storing the current state of our menu */
+struct Menu
+{
+  bool is_automaton_menu;
+  bool is_open;
+  int curr_choice;
+  int num_choices;
+} menu;
+
+void
+update_menu (int key)
+{
+  switch (key)
+    {
+    case KEY_UP:
+      --menu.curr_choice;
+      if (menu.curr_choice < 0)
+        menu.curr_choice = menu.num_choices - 1;
+      break;
+    case KEY_DOWN:
+      ++menu.curr_choice;
+      if (menu.curr_choice >= menu.num_choices)
+        menu.curr_choice = 0;
+      break;
+    case 10:
+      menu.is_automaton_menu = !menu.is_automaton_menu;
+      menu.curr_choice       = 0;
+      menu.num_choices       = (menu.is_automaton_menu ? num_automaton_choices
+                                : num_state_choices);
+      /* Close the menu after we've choosen a starting state */
+      if (menu.is_automaton_menu)
+        menu.is_open = false;
+    }
+}
 
 void
 render_automaton (WINDOW *win, Automaton *automaton)
@@ -50,24 +85,24 @@ render_automaton (WINDOW *win, Automaton *automaton)
 }
 
 void
-print_menu (WINDOW *win, int highlight, int num_choices, bool state_menu)
+print_menu (WINDOW *win)
 {
   int x = 2;
   int y = 2;
   wclear(win);
   box(win, 0, 0);
-  for (int i = 0; i < num_choices; ++i)
+  for (int i = 0; i < menu.num_choices; ++i)
     {
-      if (highlight == i)
+      if (menu.curr_choice == i)
         {
           wattron(win, A_REVERSE);
-          mvwprintw(win, y, x, "%s", state_menu ? state_choices[i] :
-                    automaton_choices[i]);
+          mvwprintw(win, y, x, "%s", menu.is_automaton_menu
+                    ? automaton_choices[i] : state_choices[i]);
           wattroff(win, A_REVERSE);
         }
       else
-        mvwprintw(win, y, x, "%s", state_menu ? state_choices[i] :
-                  automaton_choices[i]);
+        mvwprintw(win, y, x, "%s", menu.is_automaton_menu ? automaton_choices[i]
+                  : state_choices[i]);
       ++y;
     }
   wrefresh(win);
@@ -78,11 +113,12 @@ main ()
 {
   WINDOW *life_win;
   WINDOW *menu_win;
-  bool menu_open  = true;
-  bool state_menu = false;
-  int num_choices = NUM_AUTOMATONS;
-  int highlight   = 0;
-  int choice      = -1;
+
+  // initialize menu struct
+  menu.curr_choice       = 0;
+  menu.is_automaton_menu = true;
+  menu.is_open           = true;
+  menu.num_choices       = num_automaton_choices;
   
   // initialization
   srand(time(NULL));
@@ -107,57 +143,36 @@ main ()
       switch (key)
         {
         case KEY_F(2): /* Toggle the menu on/off */
-          menu_open   = !menu_open;
-          num_choices = NUM_AUTOMATONS;
-          state_menu  = false;
-          choice      = -1;
-          timeout(-1);
-          break;
-        case KEY_UP:
-          if (highlight == 0)
-            highlight = num_choices - 1;
+          menu.is_open = !menu.is_open;
+          if (menu.is_open)
+            timeout(-1);
           else
-            --highlight;
-          break;
-        case KEY_DOWN:
-          if (highlight == num_choices - 1)
-            highlight = 0;
-          else
-            ++highlight;
+            timeout(1000);
           break;
         case '\n':
-          choice      = highlight;
-          highlight   = 0;
-          state_menu  = !state_menu;
-          num_choices = state_menu ? STATE_CHOICES : NUM_AUTOMATONS;
+          if (menu.is_automaton_menu)
+            automaton_set_type(life, menu.curr_choice);
+          else
+            {
+              switch (menu.curr_choice)
+                {
+                case 0:
+                  automaton_random_state(life);
+                  break;
+                }
+              timeout(1000);
+            }
           break;
         }
 
-      if (menu_open)
+      if (menu.is_open)
         {
-          print_menu(menu_win, highlight, num_choices, state_menu);
-          if (choice >= 0)
-            {
-              // The open menu was the one asking to choose an automaton
-              if (state_menu)
-                {
-                  automaton_destroy(life);
-                  life = automaton_create(choice, LINES * 2, COLS * 2);
-                }
-              else
-                {
-                  switch (choice)
-                    {
-                    case 0:
-                      automaton_random_state(life);
-                    }
-                  menu_open = false;
-                  timeout(1000);
-                }
-            }
-        }
+          update_menu(key);
+          print_menu(menu_win);
+        }  
+
       // The menu may have just been closed
-      if (!menu_open)
+      if (!menu.is_open)
         {
           render_automaton(life_win, life);
           automaton_update_state(life);
