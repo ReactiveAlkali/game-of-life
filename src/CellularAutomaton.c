@@ -368,3 +368,54 @@ automaton_set_type (Automaton *automaton, Automaton_Type type)
 {
   automaton->type = type;
 }
+
+void
+automaton_cycle_state (Automaton *automaton, int y, int x)
+{
+  assert(automaton);
+  assert(automaton->board_state);
+
+  static const int live  = 1;
+
+  int *value = point_set_search(automaton->board_state, y, x);
+
+  /* Dead state to live */
+  if (!value)
+    point_set_insert(automaton->board_state, y, x, &live);
+  else if ((*value) == 1)
+    {
+      switch (automaton->type)
+        {
+        case game_of_life:
+        case seeds:
+        case highlife:
+        case day_and_night:
+          point_set_delete(automaton->board_state, y, x);
+          break;
+        case greenberg_hastings:
+        case brians_brain:
+          ++(*value);
+        }
+    }
+  else
+    point_set_delete(automaton->board_state, y, x);
+}
+
+bool
+automaton_dead_state (Automaton *automaton)
+{
+  assert(automaton);
+  assert(automaton->board_state);
+
+  bool success          = false;
+  Point_Set *dead_state = point_set_create(sizeof(int), free);
+  if (!dead_state)
+    goto done;
+
+  point_set_destroy(automaton->board_state);
+  automaton->board_state = dead_state;
+  success = true;
+
+ done:
+  return success;
+}

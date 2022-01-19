@@ -100,6 +100,16 @@ bool
 automaton_random_state (Automaton *automaton);
 
 /**
+ * @brief Sets the automaton to a dead state.
+ *
+ * Sets all cells of the given automaton to the dead state.
+ * @param automaton The automaton we're setting to a dead state.
+ * @return Returns whether the operation was successful
+ */
+bool
+automaton_dead_state (Automaton *automaton);
+
+/**
  * @brief Sets the board state of the given automaton.
  *
  * Sets the given automaton to the given state.  The automaton's border will 
@@ -122,5 +132,16 @@ automaton_set_board_state (Automaton *automaton, int height, int width, int **st
  */
 void
 automaton_set_type (Automaton *automaton, Automaton_Type type);
+
+/**
+ * @brief Cycles the given cell to the next state
+ *
+ * This function cycles the given given cell to the next possible state.
+ * @param automaton The automaton we're cycling the state of
+ * @param y The y coordinate of the cell
+ * @param x The x coordinate of the cell
+ */
+void
+automaton_cycle_state (Automaton *automaton, int y, int x);
 
 #endif
