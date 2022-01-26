@@ -73,6 +73,14 @@ string_push_back (String *str, char c)
 }
 
 void
+string_pop_back (String *str)
+{
+  if (str->size > 0)
+    --str->size;
+  str->s[str->size] = '\0';
+}
+
+void
 string_clear (String *str)
 {
   str->size = 0;

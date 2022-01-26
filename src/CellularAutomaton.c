@@ -325,6 +325,107 @@ automaton_get_state (Automaton *automaton, int y, int x)
  */
 
 bool
+automaton_set_state (Automaton *automaton, int y, int x, int state)
+{
+  bool success = true;
+
+  /* check whether the state is valid */
+  switch (automaton->type)
+    {
+    case game_of_life:
+    case highlife:
+    case seeds:
+    case day_and_night:
+      success = state == 0 || state == 1;
+      break;
+    case greenberg_hastings:
+    case brians_brain:
+      success = state == 0 || state == 1 || state == 2;
+      break;
+    }
+  if (!success)
+    goto done;
+
+  /* check whether the cell is valid */
+  if (y < -automaton->height / 2
+      || y > automaton->height - automaton->height / 2
+      || x < -automaton->width / 2
+      || x > automaton->width - automaton->width / 2)
+    {
+      success = false;
+      goto done;
+    }
+
+  /* set the cell's state */
+  if (state == 0)
+    point_set_delete(automaton->board_state, y, x);
+  else
+    {
+      int *curr_state = point_set_search(automaton->board_state, y, x);
+      if (!curr_state)
+        point_set_insert(automaton->board_state, y, x, &state);
+      else
+        *curr_state = state;
+    }
+  
+ done:
+  return success;
+}
+/*
+bool
+automaton_set_board_state (Automaton *automaton, int height, int width, int **board)
+{
+  assert(automaton);
+  assert(automaton->board_state);
+  assert(board);
+  
+  bool success         = false;
+  Point_Set *new_board = point_set_create(sizeof(int), free);
+  if (!new_board)
+    goto done;
+
+  for (int i = 0; i < height; ++i)
+    {
+      for (int j = 0; j < width; ++j)
+        {
+          if (board[i][j] == 1)
+            {
+              point_set_insert(new_board, i - height / 2, j - width / 2,
+                               &(board[i][j]));
+            }
+          else if (board[i][j] == 2)
+            {
+              int live_state = 1;
+
+              switch (automaton->type)
+                {
+                case game_of_life:
+                case seeds:
+                case highlife:
+                case day_and_night:
+                  point_set_insert(new_board, i - height / 2, j - width / 2,
+                                   &live_state);
+                  break;
+                case greenberg_hastings:
+                case brians_brain:
+                  point_set_insert(new_board, i - height / 2, j - width / 2,
+                                   &(board[i][j]));
+                  break;
+                }
+            }
+        }
+    }
+
+  point_set_destroy(automaton->board_state);
+  automaton->board_state = new_board;
+  success = true;
+
+ done:
+  return success;
+}
+*/
+
+bool
 automaton_random_state (Automaton *automaton)
 {
   assert(automaton);

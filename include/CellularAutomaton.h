@@ -71,9 +71,23 @@ automaton_update_state (Automaton *automaton);
 int
 automaton_get_state (Automaton *automaton, int y, int x);
 
+/**
+ * @brief Get the current width of an automaton
+ *
+ * Retrieves the width of the given automaton.
+ * @param automaton The cellular automaton to get the width of
+ * @return The width of the given automaton
+ */
 int
 automaton_get_width (Automaton *automaton);
 
+/**
+ * @brief Get the current height of an automaton.
+ *
+ * Get the height of the given automaton.
+ * @param automaton The cellular automaton whose height is returned
+ * @return The height of the given automaton
+ */
 int
 automaton_get_height (Automaton *automaton);
 
@@ -110,18 +124,20 @@ bool
 automaton_dead_state (Automaton *automaton);
 
 /**
- * @brief Sets the board state of the given automaton.
+ * @brief Set the state of the given cell
  *
- * Sets the given automaton to the given state.  The automaton's border will 
- * be resized if the given state is larger that the current board size.
- * @param automaton The automaton to set the board state of.
- * @param height The height of the given state.
- * @param width The width of the given state.
- * @param state A 2D array containing the board state.
- * @return Returns whether the state was successfully set.
+ * Sets the state of a specified cell in the given cellular automaton.  If the
+ * given state is an invalid cell state of the given automaton the operation 
+ * will fail.  Similarly the operation will also fail if the given cell is 
+ * outside the bounds of the automaton's board.
+ * @param automaton The automaton that we're changing a cell state of.
+ * @param y The y coordinate of the specified cell.
+ * @param x The x coordinate of the specified cell.
+ * @param state The state to set the given cell to.
+ * @return Returns whether the operation was successful.
  */
 bool
-automaton_set_board_state (Automaton *automaton, int height, int width, int **state);
+automaton_set_state (Automaton *automaton, int y, int x, int state);
 
 /**
  * @brief Sets the automaton's type

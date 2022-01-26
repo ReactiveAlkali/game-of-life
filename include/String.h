@@ -22,6 +22,9 @@ bool
 string_push_back (String *str, char c);
 
 void
+string_pop_back (String *str);
+
+void
 string_clear (String *str);
 
 #endif
